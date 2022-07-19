@@ -45,8 +45,9 @@ tf.random.set_seed(SEED)
 
 # the list of gestures that data is available for
 GESTURES = [
-    "punch",
-    "flex",
+    "izquierda_derecha",
+    "golpe",
+    "arriba_abajo"
 ]
 
 SAMPLES_PER_GESTURE = 119
@@ -81,11 +82,10 @@ for gesture_index in range(NUM_GESTURES):
       # - acceleration is between: -4 to +4
       # - gyroscope is between: -2000 to +2000
       tensor += [
-          (df['aX'][index] + 4) / 8,
-          (df['aY'][index] + 4) / 8,
-          (df['aZ'][index] + 4) / 8,
+          (df['x'][index] + 4) / 8,
+          (df['y'][index] + 4) / 8,
+          (df['z'][index] + 4) / 8,
       ]
-
     inputs.append(tensor)
     outputs.append(output)
 
@@ -94,14 +94,6 @@ inputs = np.array(inputs)
 outputs = np.array(outputs)
 
 print("Data set parsing and preparation complete.")
-
-
-
-
-
-
-
-
 
 # Randomize the order of the inputs, so they can be evenly distributed for training, testing, and validation
 # https://stackoverflow.com/a/37710486/2020087
@@ -122,73 +114,13 @@ outputs_train, outputs_test, outputs_validate = np.split(outputs, [TRAIN_SPLIT, 
 
 print("Data set randomization and splitting complete.")
 
-
-
-
-
-
-
 # build the model and train it
-'''model = tf.keras.Sequential()
+model = tf.keras.Sequential()
 model.add(tf.keras.layers.Dense(128, activation='relu')) # relu is used for performance
 model.add(tf.keras.layers.Dense(128, activation='relu'))
 model.add(tf.keras.layers.Dense(NUM_GESTURES, activation='softmax')) # softmax is used, because we only expect one gesture to occur per input
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 history = model.fit(inputs_train, outputs_train, epochs=600, batch_size=1, validation_data=(inputs_validate, outputs_validate))
-'''
-
-model = tf.keras.Sequential([
-    tf.keras.layers.Embedding(3, 3),
-    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128, return_sequences=True)),
-    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(128)),
-    tf.keras.layers.Dense(NUM_GESTURES, activation='relu'),
-    #tf.keras.layers.Dense(NUM_GESTURES, activation='sigmoid')
-])
-model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
-model.summary()
-
-history = model.fit(inputs_train, outputs_train, epochs=600, batch_size=1, validation_data=(inputs_validate, outputs_validate))
-
-
-
-''' EJEMPLO!
-# Two bidirectional LSTM layers
-# Note that if you want to connect one LSTM to another, you have to pass return_sequences=True
-model = tf.keras.Sequential([
-    tf.keras.layers.Embedding(vocab_size, 64, input_length=max_length),
-    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, return_sequences=True)),
-    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(32)),
-    tf.keras.layers.Dense(64, activation='relu'),
-    tf.keras.layers.Dense(1, activation='sigmoid')
-])
-model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
-model.summary()
-
-num_epochs = 10
-history_bi = model.fit(padded, y_train, epochs=num_epochs, validation_data=(testing_padded, y_test))
-
-tf.keras.layers.Embedding(
-    input_dim,
-    output_dim,
-    embeddings_initializer='uniform',
-    embeddings_regularizer=None,
-    activity_regularizer=None,
-    embeddings_constraint=None,
-    mask_zero=False,
-    input_length=None,
-    **kwargs
-)
-'''
-
-
-
-
-
-
-
-
-
-
 
 # increase the size of the graphs. The default size is (6,4).
 plt.rcParams["figure.figsize"] = (20,10)
@@ -207,13 +139,6 @@ plt.show()
 
 print(plt.rcParams["figure.figsize"])
 
-
-
-
-
-
-
-
 # graph the loss again skipping a bit of the start
 SKIP = 100
 plt.plot(epochs[SKIP:], loss[SKIP:], 'g.', label='Training loss')
@@ -223,13 +148,6 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 plt.show()
-
-
-
-
-
-
-
 
 # graph of mean absolute error
 mae = history.history['mae']
@@ -241,14 +159,6 @@ plt.xlabel('Epochs')
 plt.ylabel('MAE')
 plt.legend()
 plt.show()
-
-
-
-
-
-
-
-
 
 # use the model to predict the test inputs
 predictions = model.predict(inputs_test)
@@ -265,16 +175,6 @@ plt.plot(inputs_test, predictions, 'r.', label='Predicted')
 plt.show()
 '''
 
-
-
-
-
-
-
-
-
-
-
 # Convert the model to the TensorFlow Lite format without quantization
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 tflite_model = converter.convert()
@@ -290,11 +190,7 @@ print("\n\n\nTENEMOS EL TENSOR FLOW!\n\n\n")
 
 
 #Guardemos el modelo:
-
 #open("sinewave_model.tflite",  "wb").write(tflite_model)
-
-
-
 from tensorflow.lite.python.util import convert_bytes_to_c_source
 
 source_text, header_text = convert_bytes_to_c_source(tflite_model,  "sine_model")
@@ -304,7 +200,6 @@ with  open('sine_model.h',  'w')  as  file:
 
 with  open('sine_model.cc',  'w')  as  file:
     file.write(source_text)
-
 
 print("\n\n\nTENEMOS EL CODIGO C!\n\n\n")
 
